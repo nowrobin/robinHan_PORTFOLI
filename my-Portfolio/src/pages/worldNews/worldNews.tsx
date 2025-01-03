@@ -2,7 +2,7 @@ import styled from "styled-components";
 import World from "../../components/globe";
 import { useEffect, useRef, useState } from "react";
 import useResize from "../../util/useResize";
-import SideBar from "../../components/sidebar/sidebar";
+// import SideBar from "../../components/sidebar/sidebar";
 
 
 export default function WorldNews() {
@@ -25,7 +25,7 @@ export default function WorldNews() {
 
   return (
     <GlobeContainer ref={globeContainerRef}>
-      <SideBar />
+      {/* <SideBar /> */}
       <World width={dimensions.width} height={dimensions.height} />
     </GlobeContainer>
   )

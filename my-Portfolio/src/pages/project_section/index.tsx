@@ -4,15 +4,11 @@ import styled from "styled-components"
 export default function ProjectSection() {
   const dragItem = useRef(0); // 드래그할 아이템의 인덱스
   const dragOverItem = useRef(0); // 드랍할 위치의 아이템의 인덱스
-  const [list, setList] = useState([
-    "Item 1",
-    "Item 2",
-    "Item 3",
-    "Item 4",
-    "Item 5",
-    "Item 6"
+  const [users, setUsers] = useState([
+    { name: "user 0", order: 0 },
+    { name: "user 1", order: 1 },
+    { name: "user 2", order: 2 }
   ]);
-
 
 
   const dragEnter = (e: React.DragEvent<HTMLDivElement>, position: number) => {
@@ -37,25 +33,61 @@ export default function ProjectSection() {
     dragItem.current = 0;
     dragOverItem.current = 0;
     setList(newList);
-    console.log(e)
   };
+
+  const dragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    console.log(e.currentTarget)
+  }
+
+  const onSortEnd = ({ oldIndex, newIndex }) => {
+    setUsers(prevState => {
+      const newItems = [...prevState];
+
+      if (oldIndex > newIndex) {
+        for (let i = oldIndex - 1; i >= newIndex; i--) {
+          newItems[i].order++;
+          newItems[oldIndex].order = newIndex;
+        }
+      } else if (oldIndex < newIndex) {
+        for (let i = oldIndex + 1; i <= newIndex; i++) {
+          newItems[i].order--;
+          newItems[oldIndex].order = newIndex;
+        }
+      }
+      return newItems.sort((a, b) => a.order - b.order);
+    });
+  };
+
+  const SortableItem = sortableElement(({ user }) => {
+    return <div style={itemStyles}>{user.name}</div>;
+  });
+
+  const SortableContainer = sortableContainer(({ children }) => {
+    return <div className="container">{children}</div>;
+  });
 
   return (
     <Container>
-      {list &&
-        list.map((item, idx) => (
+      {/* {users &&
+        users.map((item, idx) => (
           <ContentItems
             key={idx}
+            index={idx}
             className="card"
             draggable
             onDragStart={(e) => dragStart(e, idx)}
             onDragEnter={(e) => dragEnter(e, idx)}
             onDragEnd={drop}
-            onDragOver={(e) => e.preventDefault()}
+            onDragOver={(e) => dragOver(e)}
           >
-            {item}
+            {item.name}
           </ContentItems>
+        ))} */}
+      <SortableContainer onSortEnd={onSortEnd}>
+        {users.map((user, index) => (
+          <SortableItem key={index} index={index} user={user} />
         ))}
+      </SortableContainer>
     </Container>
   )
 }
@@ -64,17 +96,19 @@ const Container = styled.div`
     display:flex;
     flex-wrap: wrap;
     flex-direction:column;
-    width: 100vw;
-    height: 150px;
-    gap: 10px;
-    &:hover > .card:not(:hover) {
+    width: 100%;
+    height: auto;
+    padding: 20px;
+    gap:20px;
+    background-color: white;
+    /* &:hover > .card:not(:hover) {
     filter: blur(4px);
-    }
+    } */
 
     `
 const ContentItems = styled.div`
   display: grid;
-  grid-template-rows: 1fr 1fr 1fr;
+  gap: 20px;
   background-color: gray;
     &:hover{
       text-decoration: underline;

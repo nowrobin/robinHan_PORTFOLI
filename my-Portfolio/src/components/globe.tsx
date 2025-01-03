@@ -1,5 +1,5 @@
 import Globe, { GlobeMethods } from "react-globe.gl";
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useCallback } from 'react';
 import country from "../datasets/dataset.json"
 import { useLocaleStore } from "../store/useLocaleStore";
 
@@ -97,17 +97,42 @@ type DimensionProp = {
 }
 export default function World({ width, height }: DimensionProp) {
   const globeRef = useRef<GlobeMethods>();
-
   const [countries, setCountries] = useState<CountriesProp>();
-  const [hoverD, setHoverD] = useState({
-    curr: {},
-    prev: {}
-  });
+  const [hoverD, setHoverD] = useState<FeaturesEntity | null>(null)
+  const [clicked, setClicked] = useState<FeaturesEntity | null>(null)
+  useEffect(() => {
+    if (globeRef.current) {
+      globeRef.current.controls().autoRotate = true;
+      globeRef.current.controls().autoRotateSpeed = 1;
+    }
+    return setCountries(country);
+  }, [globeRef])
+
+  const { updateLocale } = useLocaleStore()
+  const [center, setCenter] = useState({
+    lat: 0,
+    lng: 0,
+    altitude: 3,
+  })
 
   useEffect(() => {
-    return setCountries(country);
-  }, [])
-  const { updateLocale } = useLocaleStore()
+    if (globeRef.current) {
+      globeRef.current.controls().autoRotate = false;
+      globeRef.current.pointOfView(center)
+    }
+  }, [center])
+
+  const handleHover = useCallback(
+    (polygon: object | null): void => {
+      const polygonSet = polygon as FeaturesEntity
+      if (polygon) {
+        setHoverD(polygonSet);
+        updateLocale(polygonSet.properties.ADMIN);
+      } else setHoverD(null)
+    },
+    [setHoverD, updateLocale]
+  );
+
   return (
     <Globe
       ref={globeRef}
@@ -117,20 +142,23 @@ export default function World({ width, height }: DimensionProp) {
       lineHoverPrecision={0}
       polygonsData={
         (countries && countries.features) ? countries!.features!.filter(d => d.properties.ISO_A2 !== 'AQ') : []}
-      polygonAltitude={(d: FeaturesEntity) => d === hoverD.curr ? 0.5 : 0.06}
-      polygonCapColor={(d: FeaturesEntity) => d === hoverD.curr ? '#f1781b' : '#2ba4fb'}
+      polygonAltitude={(d: FeaturesEntity) => d === hoverD ? 0.5 : 0.06}
+      polygonCapColor={(d: FeaturesEntity) => d === hoverD ? '#f1781b' : '#2ba4fb'}
       polygonSideColor={() => 'rgba(65, 65, 65, 0.15)'}
       polygonStrokeColor={() => '#ffffff'}
       polygonLabel={({ properties }: FeaturesEntity) =>
         `<b>${properties.ADMIN} (${properties.ISO_A2}):</b> <br />`
       }
-      onPolygonHover={(a, b) => {
-        setHoverD({
-          curr: a as object,
-          prev: b as object,
+      onPolygonHover={handleHover}
+      polygonsTransitionDuration={300}
+      onPolygonClick={(polygon, event, coords) => {
+
+        setCenter({
+          lat: coords.lat,
+          lng: coords.lng,
+          altitude: 3
         })
       }}
-      polygonsTransitionDuration={300}
     />
   )
 
